@@ -25,7 +25,6 @@ import os
 import os.path
 import pickle
 import random
-
 # import the pygame module, so you can use it
 import sys
 
@@ -41,16 +40,14 @@ from maze_solver import MazeSolver
 from mouse_drawer import MouseDrawer
 
 generation = 0
-SINGLE_MAZE_FILE = ""
-# SINGLE_MAZE_FILE = "mazes\19x13\maze_CRASHED_20220601-215248_path-46.txt"
+# SINGLE_MAZE_FILE = "maze_CRASHED_20220601-215248_path-46.txt"
 CHECKPOINT_FILE_TO_LOAD = None
-# CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-86"
+# CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-13"
 
 sys.setrecursionlimit(8000)
 
 
 def run_maze(genomes, neat_config):
-    global SINGLE_MAZE_FILE
     global generation
     generation += 1
 
@@ -89,8 +86,10 @@ def run_maze(genomes, neat_config):
     paused = False
     frame_number = 0
     draw_frame = True
-    maze_area = config.MAZE_ROWS * config.MAZE_COLS * config.MAZE_SQUARE_SIZE
-    max_distance = 1.3 * round(maze_area / 20 + 200 * math.sqrt(generation))
+    maze_area = (
+        (config.MAZE_ROWS - 2) * (config.MAZE_COLS - 2) * config.MAZE_SQUARE_SIZE
+    )
+    max_distance = round(maze_area / 2.0 + 300 * math.sqrt(generation))
     initial_direction_radians = random.uniform(-math.pi, math.pi)
 
     maze1 = maze.Maze(
@@ -100,12 +99,7 @@ def run_maze(genomes, neat_config):
         config.MAZE_DIRECTORY,
     )
 
-    if SINGLE_MAZE_FILE == "":
-        maze1.create()
-        maze1.save("NEW")
-        SINGLE_MAZE_FILE = maze1.file_name
-    else:
-        maze1.load(SINGLE_MAZE_FILE)
+    maze1.create()
 
     maze_solver = MazeSolver(maze1.maze_tiny)
     (

@@ -132,8 +132,9 @@ class Mouse:
         self.position = (config.MAZE_SQUARE_SIZE * 1.5, config.MAZE_SQUARE_SIZE * 1.5)
         self.position_rounded = (round(self.position[0]), round(self.position[1]))
         self.position_tiny = None
-        self.position_tiny_previous = None
-        self.position_tiny_frame_count = 0
+        self.cells_visited = set()
+        # self.position_tiny_previous = None
+        # self.position_tiny_frame_count = 0
         self.speed = config.MAZE_SQUARE_SIZE / 50  # pixels per frame
         self.speed_min = speed_min_initial
         self.speed_max = speed_max_initial
@@ -250,7 +251,8 @@ class Mouse:
             # score based on how far the mouse got through the maze along the path to the end
             # mouse could have reached much further along the path to the end than where it crashed, so need to calculate how far it got with each step.
             # penalise for having rotated lots of times
-            self.score = 100 * self.max_happy_path_reached / self.maze_min_path_distance
+            # self.score = 100 * self.max_happy_path_reached / self.maze_min_path_distance
+            self.score = len(self.cells_visited)
 
     def get_driving_changes_with_ai():
         new_steering_radians = 0
@@ -347,15 +349,17 @@ class Mouse:
         self.position = new_position
         self.position_rounded = (round(self.position[0]), round(self.position[1]))
         self.position_previous_rounded = self.position_rounded
-        self.position_tiny_previous = self.position_tiny
+        # self.position_tiny_previous = self.position_tiny
         self.position_tiny = (
             round(self.position[0] / config.MAZE_SQUARE_SIZE),
             round(self.position[1] / config.MAZE_SQUARE_SIZE),
         )
-        if self.position_tiny == self.position_tiny_previous:
-            self.position_tiny_frame_count += 1
-        else:
-            self.position_tiny_frame_count = 1
+        # if self.position_tiny == self.position_tiny_previous:
+        #     self.position_tiny_frame_count += 1
+        # else:
+        #     self.position_tiny_frame_count = 1
+        if self.position_tiny not in self.cells_visited:
+            self.cells_visited.add(self.position_tiny)
 
         if draw_frame:
             pygame.display.update(
@@ -401,8 +405,8 @@ class Mouse:
             self.update_score()
             return
 
-        if self.status is MouseStatus.HUNTING:
-            self.update_happy_path_progress()
+        # if self.status is MouseStatus.HUNTING:
+        #    self.update_happy_path_progress()
 
         if self.check_if_position_wins(self.position[0], self.position[1]):
             self.status = MouseStatus.SUCCESSFUL
@@ -414,7 +418,7 @@ class Mouse:
             self.update_score()
             return
 
-        if self.check_if_too_many_frames_in_same_cell(self.position_tiny_frame_count):
+        if self.check_if_pottering(self.frames, self.cells_visited):
             self.status = MouseStatus.POTTERING
             self.update_score()
             return
@@ -544,9 +548,9 @@ class Mouse:
 
     @staticmethod
     # @jit(nopython=True)
-    def check_if_too_many_frames_in_same_cell(position_tiny_frame_count):
-        """check if the mouse has stayed in the same cell for too long"""
-        if position_tiny_frame_count > MOUSE_MAX_FRAMES_IN_SAME_CELL:
+    def check_if_pottering(frames, cells_visited):
+        """check if the mouse has moved too slowly"""
+        if len(cells_visited) < math.sqrt(frames / config.MAZE_SQUARE_SIZE):
             return True
         else:
             return False
