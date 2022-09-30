@@ -25,6 +25,7 @@ import os
 import os.path
 import pickle
 import random
+
 # import the pygame module, so you can use it
 import sys
 
@@ -39,16 +40,17 @@ from maze_drawer import MazeDrawer
 from maze_solver import MazeSolver
 from mouse_drawer import MouseDrawer
 
-# import time
-
 generation = 0
-SINGLE_MAZE_FILE = "maze_CRASHED_20220601-215248_path-46.txt"
-CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-5241"
+SINGLE_MAZE_FILE = ""
+# SINGLE_MAZE_FILE = "mazes\19x13\maze_CRASHED_20220601-215248_path-46.txt"
+CHECKPOINT_FILE_TO_LOAD = None
+# CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-86"
 
 sys.setrecursionlimit(8000)
 
 
 def run_maze(genomes, neat_config):
+    global SINGLE_MAZE_FILE
     global generation
     generation += 1
 
@@ -88,7 +90,8 @@ def run_maze(genomes, neat_config):
     frame_number = 0
     draw_frame = True
     maze_area = config.MAZE_ROWS * config.MAZE_COLS * config.MAZE_SQUARE_SIZE
-    max_distance = round(maze_area / 20 + 200 * math.sqrt(generation))
+    max_distance = 1.3 * round(maze_area / 20 + 200 * math.sqrt(generation))
+    initial_direction_radians = random.uniform(-math.pi, math.pi)
 
     maze1 = maze.Maze(
         config.MAZE_ROWS,
@@ -97,7 +100,12 @@ def run_maze(genomes, neat_config):
         config.MAZE_DIRECTORY,
     )
 
-    maze1.load(config.MAZE_DIRECTORY + SINGLE_MAZE_FILE)
+    if SINGLE_MAZE_FILE == "":
+        maze1.create()
+        maze1.save("NEW")
+        SINGLE_MAZE_FILE = maze1.file_name
+    else:
+        maze1.load(SINGLE_MAZE_FILE)
 
     maze_solver = MazeSolver(maze1.maze_tiny)
     (
@@ -131,9 +139,11 @@ def run_maze(genomes, neat_config):
         "generation": generation,
         "frame": 0,
         "mice hunting": 0,
+        "mice successful": 0,
         "mice crashed": 0,
         "mice spun out": 0,
         "mice timed out": 0,
+        "mice pottering": 0,
     }
 
     for id, g in genomes:
@@ -155,6 +165,7 @@ def run_maze(genomes, neat_config):
             mouse.OPTIMISE_MOUSE_VISITED_PATH_AVOIDANCE_FACTOR,
             mouse.OPTIMISE_MOUSE_FRAMES_BETWEEN_BLURRING_VISITED,
             max_distance,
+            initial_direction_radians,
         )
         mice.append(mouse_to_add)
 
@@ -195,18 +206,25 @@ def run_maze(genomes, neat_config):
             mouse_status_previous = mousei.status
             mousei.get_maze_wall_distances()
             output = nets[index].activate(mousei.get_data())
-            mousei.move(draw_frame, output[0], output[1])
+
+            steering_radians = output[0] * mouse.MOUSE_STEERING_RADIANS_DELTA_MAX
+            speed_delta = output[1] * 2.0
+            mousei.move(draw_frame, steering_radians, speed_delta)
 
             # check if the status has changes
             if mousei.status is not mouse_status_previous:
                 if mousei.status is not mouse.MouseStatus.HUNTING:
                     genomes[index][1].fitness = mousei.score
-                    if mousei.status is mouse.MouseStatus.CRASHED:
+                    if mousei.status is mouse.MouseStatus.SUCCESSFUL:
+                        stats_info_global["mice successful"] += 1
+                    elif mousei.status is mouse.MouseStatus.CRASHED:
                         stats_info_global["mice crashed"] += 1
                     elif mousei.status is mouse.MouseStatus.SPUNOUT:
                         stats_info_global["mice spun out"] += 1
                     elif mousei.status is mouse.MouseStatus.TIMEDOUT:
                         stats_info_global["mice timed out"] += 1
+                    elif mousei.status is mouse.MouseStatus.POTTERING:
+                        stats_info_global["mice pottering"] += 1
                     continue
 
             # the trail is drawn to its surface (but not necessarily rendered) on every frame
@@ -260,9 +278,9 @@ def run_neat(config):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(generation_interval=100))
+    p.add_reporter(neat.Checkpointer(generation_interval=1))
 
-    winner = p.run(run_maze, 10000)
+    winner = p.run(run_maze, 1000)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
     print("done")

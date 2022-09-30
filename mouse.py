@@ -14,7 +14,8 @@ MOUSE_ACCELERATION_MAX = 2  # change in speed in pixels per frame
 MOUSE_STEERING_RADIANS_MAX = math.radians(45)
 MOUSE_STEERING_RADIANS_DELTA_MAX = math.radians(45)
 MOUSE_TRAIL_CIRCLE_ALPHA = None
-MOUSE_MAX_SPIN_RADIANS = 30
+MOUSE_MAX_SPIN_RADIANS = 4 * math.pi
+MOUSE_MAX_FRAMES_IN_SAME_CELL = 1.2 * config.MAZE_SQUARE_SIZE
 
 # The following globals are to be set individually for each mouse
 # to try to optimise their values
@@ -57,6 +58,7 @@ class MouseStatus(Enum):
     CRASHED = auto()
     TIMEDOUT = auto()
     SPUNOUT = auto()
+    POTTERING = auto()
 
 
 class Mouse:
@@ -76,6 +78,7 @@ class Mouse:
         visited_path_avoidance_factor,
         frames_between_blurring_visited,
         max_distance,
+        direction_radians,
     ):
         self.window_size = window_size
         self.maze_big = (
@@ -91,6 +94,7 @@ class Mouse:
         self.visited_path_avoidance_factor = visited_path_avoidance_factor
         self.frames_between_blurring_visited = frames_between_blurring_visited
         self.max_distance = max_distance
+        self.direction_radians = direction_radians
 
         """
         *** fixed globals used in the Mouse class ***
@@ -127,13 +131,15 @@ class Mouse:
         self.distance_travelled = 0
         self.position = (config.MAZE_SQUARE_SIZE * 1.5, config.MAZE_SQUARE_SIZE * 1.5)
         self.position_rounded = (round(self.position[0]), round(self.position[1]))
+        self.position_tiny = None
+        self.position_tiny_previous = None
+        self.position_tiny_frame_count = 0
         self.speed = config.MAZE_SQUARE_SIZE / 50  # pixels per frame
         self.speed_min = speed_min_initial
         self.speed_max = speed_max_initial
         self.status = MouseStatus.HUNTING
         # could try to set initial direction based on the shape of the
         # maze that's generated but this is fine
-        self.direction_radians = math.pi / 6
         self.steering_radians = 0
         self.position_previous_rounded = self.position_rounded
         self.visited_alpha = np.zeros(window_size, dtype=np.int16)
@@ -214,11 +220,9 @@ class Mouse:
 
     def update_happy_path_progress(self):
         # get the position of the mouse on a scale where each sqaure of the maze is 1 pixel (as in maze_path and maze_tiny)
-        position_tiny_x = round(self.position[0] / config.MAZE_SQUARE_SIZE)
-        position_tiny_y = round(self.position[1] / config.MAZE_SQUARE_SIZE)
         # get the value of maze_path at that position
-        progress_for_position = self.maze_distance_score[position_tiny_y][
-            position_tiny_x
+        progress_for_position = self.maze_distance_score[self.position_tiny[1]][
+            self.position_tiny[0]
         ]
         # update max_happy_path_reached if further progress has been reached than ever before
         if progress_for_position > self.max_happy_path_reached:
@@ -231,10 +235,14 @@ class Mouse:
         if self.status is MouseStatus.SUCCESSFUL:
             # nice high score. Multiply by min-path distance. Divide by number of steps (frames) taken.
             self.score = (
-                1000
-                * self.maze_min_path_distance
-                * config.MAZE_SQUARE_SIZE
-                / self.frames
+                (
+                    1000
+                    * self.maze_min_path_distance
+                    * config.MAZE_SQUARE_SIZE
+                    / self.frames
+                )
+                / (self.distance_travelled / self.max_distance)
+                / (self.frames / 1000)
             )
         elif self.status is MouseStatus.SPUNOUT:
             self.score = -1
@@ -339,6 +347,15 @@ class Mouse:
         self.position = new_position
         self.position_rounded = (round(self.position[0]), round(self.position[1]))
         self.position_previous_rounded = self.position_rounded
+        self.position_tiny_previous = self.position_tiny
+        self.position_tiny = (
+            round(self.position[0] / config.MAZE_SQUARE_SIZE),
+            round(self.position[1] / config.MAZE_SQUARE_SIZE),
+        )
+        if self.position_tiny == self.position_tiny_previous:
+            self.position_tiny_frame_count += 1
+        else:
+            self.position_tiny_frame_count = 1
 
         if draw_frame:
             pygame.display.update(
@@ -394,6 +411,11 @@ class Mouse:
 
         if self.check_if_spun_out(self.direction_radians):
             self.status = MouseStatus.SPUNOUT
+            self.update_score()
+            return
+
+        if self.check_if_too_many_frames_in_same_cell(self.position_tiny_frame_count):
+            self.status = MouseStatus.POTTERING
             self.update_score()
             return
 
@@ -514,8 +536,17 @@ class Mouse:
     @staticmethod
     # @jit(nopython=True)
     def check_if_spun_out(direction_radians):
-        """check if the mouse has reached the end of the maze"""
-        if abs(direction_radians > MOUSE_MAX_SPIN_RADIANS):
+        """check if the mouse has spun round too many times"""
+        if abs(direction_radians) > MOUSE_MAX_SPIN_RADIANS:
+            return True
+        else:
+            return False
+
+    @staticmethod
+    # @jit(nopython=True)
+    def check_if_too_many_frames_in_same_cell(position_tiny_frame_count):
+        """check if the mouse has stayed in the same cell for too long"""
+        if position_tiny_frame_count > MOUSE_MAX_FRAMES_IN_SAME_CELL:
             return True
         else:
             return False
