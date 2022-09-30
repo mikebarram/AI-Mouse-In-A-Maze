@@ -1,0 +1,6 @@
+/__pycache__
+/.vscode
+/maze_stats
+/mazes
+/best.pickle
+/neat-checkpoint*
