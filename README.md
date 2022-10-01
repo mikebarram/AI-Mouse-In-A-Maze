@@ -16,6 +16,9 @@ First 3 generations of mice trying to find their way:
 
 https://user-images.githubusercontent.com/13784388/193431284-aa68a77d-72c0-4cf9-830f-baf10dff3d39.mp4
 
+After 107 generations, it looks a lot better but is still not very successful, averaging a roughly 1% success rate:
+
+![ai_mice_gen107](https://user-images.githubusercontent.com/13784388/193431552-e688ddef-d903-42ad-88b9-844d9c4506c7.png)
 
 ## Problems to solve
 - It's nothing like as good as non-AI version
