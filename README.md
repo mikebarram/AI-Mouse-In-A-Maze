@@ -10,7 +10,7 @@ The code is largely the same as the non-AI version but, when a mouse has to deci
 
 Feedback to the algorithm is provided only when a mouse stops (gets to the end or crashes) or is stopped (takes too long, spins around too much or doesn't move enough (potters)). It gets a very high score for success, otherwise a score for how many different squares it's visited. It did get a score for how far along the path to the end it had gone but, as there's no way to know if any given path is on the way to the end, it's better to reward an adventurous mouse than one that's lucky. See update_score() in mouse.py for details.
 
-On my laptop, which has an AMD Ryzen 7 PRO 3700U processor, each generation takes about 30 seconds with a 21x13 maze and a population size of 300.
+On my laptop, which has an AMD Ryzen 7 PRO 3700U processor, each generation takes about 20 seconds with a 21x13 maze, a population size of 300 and the FRAME_DISPLAY_RATE set to 100 (only has to render all of the mice once every 100 steps).
 
 First 3 generations of mice trying to find their way:
 
