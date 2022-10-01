@@ -25,6 +25,7 @@ import os
 import os.path
 import pickle
 import random
+
 # import the pygame module, so you can use it
 import sys
 
@@ -42,7 +43,7 @@ from mouse_drawer import MouseDrawer
 generation = 0
 # SINGLE_MAZE_FILE = "maze_CRASHED_20220601-215248_path-46.txt"
 CHECKPOINT_FILE_TO_LOAD = None
-# CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-87"
+CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-9"
 
 sys.setrecursionlimit(8000)
 
@@ -195,29 +196,30 @@ def run_maze(genomes, neat_config):
 
         mice_hunting = 0
         for index, mousei in enumerate(mice):
-            mouse_status_previous = mousei.status
-            mousei.get_maze_wall_distances()
-            output = nets[index].activate(mousei.get_data())
+            if mousei.status is mouse.MouseStatus.HUNTING:
+                mouse_status_previous = mousei.status
+                mousei.get_maze_wall_distances()
+                output = nets[index].activate(mousei.get_data())
 
-            steering_radians_scaled = output[0]
-            speed_delta_scaled = output[1]
-            mousei.move_scaled(draw_frame, steering_radians_scaled, speed_delta_scaled)
+                steering_radians_scaled = output[0]
+                speed_delta_scaled = output[1]
+                mousei.move_scaled(draw_frame, steering_radians_scaled, speed_delta_scaled)
 
-            # check if the status has changes
-            if mousei.status is not mouse_status_previous:
-                if mousei.status is not mouse.MouseStatus.HUNTING:
-                    genomes[index][1].fitness = mousei.score
-                    if mousei.status is mouse.MouseStatus.SUCCESSFUL:
-                        stats_info_global["mice successful"] += 1
-                    elif mousei.status is mouse.MouseStatus.CRASHED:
-                        stats_info_global["mice crashed"] += 1
-                    elif mousei.status is mouse.MouseStatus.SPUNOUT:
-                        stats_info_global["mice spun out"] += 1
-                    elif mousei.status is mouse.MouseStatus.TIMEDOUT:
-                        stats_info_global["mice timed out"] += 1
-                    elif mousei.status is mouse.MouseStatus.POTTERING:
-                        stats_info_global["mice pottering"] += 1
-                    continue
+                # check if the status has changes
+                if mousei.status is not mouse_status_previous:
+                    if mousei.status is not mouse.MouseStatus.HUNTING:
+                        genomes[index][1].fitness = mousei.score
+                        if mousei.status is mouse.MouseStatus.SUCCESSFUL:
+                            stats_info_global["mice successful"] += 1
+                        elif mousei.status is mouse.MouseStatus.CRASHED:
+                            stats_info_global["mice crashed"] += 1
+                        elif mousei.status is mouse.MouseStatus.SPUNOUT:
+                            stats_info_global["mice spun out"] += 1
+                        elif mousei.status is mouse.MouseStatus.TIMEDOUT:
+                            stats_info_global["mice timed out"] += 1
+                        elif mousei.status is mouse.MouseStatus.POTTERING:
+                            stats_info_global["mice pottering"] += 1
+                        continue
 
             # the trail is drawn to its surface (but not necessarily rendered) on every frame
             mouse_drawer.draw_mouse_trail(
