@@ -25,7 +25,6 @@ import os
 import os.path
 import pickle
 import random
-
 # import the pygame module, so you can use it
 import sys
 
@@ -43,7 +42,7 @@ from mouse_drawer import MouseDrawer
 generation = 0
 # SINGLE_MAZE_FILE = "maze_CRASHED_20220601-215248_path-46.txt"
 CHECKPOINT_FILE_TO_LOAD = None
-CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-9"
+# CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-110"
 
 sys.setrecursionlimit(8000)
 

@@ -194,10 +194,9 @@ class Mouse:
         if progress_for_position > self.max_happy_path_reached:
             self.max_happy_path_reached = round(progress_for_position)
 
+    """
     def update_score(self):
-        """
         the  mouse's score is updated when it stops hunting - it's successful, crashes or times out.
-        """
         if self.status is MouseStatus.SUCCESSFUL:
             # nice high score. Multiply by min-path distance. Divide by number of steps (frames) taken.
             self.score = (
@@ -218,6 +217,17 @@ class Mouse:
             # penalise for having rotated lots of times
             # self.score = 100 * self.max_happy_path_reached / self.maze_min_path_distance
             self.score = len(self.cells_visited)
+    """
+
+    def update_score(self):
+        """
+        the  mouse's score is updated when it stops hunting - it's successful, crashes or times out.
+        """
+        if self.status is MouseStatus.SPUNOUT:
+            self.score = -1
+        elif self.status is not MouseStatus.HUNTING:
+            # score based on how adventurous the mouse is but penalising for being slow
+            self.score = (len(self.cells_visited)) ** 2 / (self.frames / 1000)
 
     def get_driving_changes_with_ai():
         new_steering_radians = 0
