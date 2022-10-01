@@ -33,8 +33,11 @@ class MouseDrawer:
         self.mouse_icon_group.add(self.mouse_icon)
 
     def draw_mouse_trail(self, position_rounded, speed, speed_max):
-        mouse_speed_colour = round(255 * speed / speed_max)
-        mouse_colour = (255 - mouse_speed_colour, mouse_speed_colour, 0)
+        # mouse_speed_colour = round(255 * speed / speed_max)
+        # mouse_colour = (255 - mouse_speed_colour, mouse_speed_colour, 0)
+        # make the mouse trails a bit darker for better contrast
+        mouse_speed_colour = round(200 * speed / speed_max)
+        mouse_colour = (200 - mouse_speed_colour, mouse_speed_colour, 20)
         self.screen.set_at(position_rounded, mouse_colour)
 
     def draw_mouse(

@@ -264,21 +264,6 @@ class Mouse:
 
         return new_steering_radians, speed_delta
 
-    def get_changes(self, use_ai):
-        """to be called every frame to move the mouse along"""
-
-        new_steering_radians = 0
-        speed_delta = 0
-
-        if use_ai:
-            new_steering_radians, speed_delta = self.get_driving_changes_with_ai()
-        else:
-            (
-                new_steering_radians,
-                speed_delta,
-            ) = self.get_driving_changes_with_real_intelligence()
-        return new_steering_radians, speed_delta
-
     def move_scaled(self, draw_frame, new_steering_radians_scaled, speed_delta_scaled):
         new_steering_radians = (
             new_steering_radians_scaled * MOUSE_STEERING_RADIANS_DELTA_MAX
