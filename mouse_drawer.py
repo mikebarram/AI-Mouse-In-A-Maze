@@ -60,7 +60,7 @@ class MouseDrawer:
 
         # from https://github.com/pygame/pygame/issues/1244
         surface_alpha = np.array(self.visited_by_mouse_screen.get_view("A"), copy=False)
-        surface_alpha[:, :] = visited_alpha
+        surface_alpha[:, :] = np.rint(visited_alpha)
 
     def draw_lines_to_maze_edge(self, whiskers):
         """draw lines from the mouse to the edge of the maze"""

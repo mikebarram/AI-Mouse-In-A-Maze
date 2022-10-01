@@ -9,8 +9,8 @@ Get the programme to start and end e.g. in main add
 if statsInfoGlobal["Total frames"] > 10000:
             break
 In the terminal run
-python -m cProfile -o output.pstats maze_23_mouse_refactor.py
-gprof2dot -f pstats output.pstats | "C:\\Program Files\\Graphviz\\bin\\dot.exe" -Tpng -o output23.png
+python -m cProfile -o output.pstats main_maze_neat.py
+gprof2dot -f pstats output.pstats | "C:\\Program Files\\Graphviz\\bin\\dot.exe" -Tpng -o output-05.png
 Have a look at output.png
 """
 
@@ -42,7 +42,7 @@ from mouse_drawer import MouseDrawer
 generation = 0
 # SINGLE_MAZE_FILE = "maze_CRASHED_20220601-215248_path-46.txt"
 CHECKPOINT_FILE_TO_LOAD = None
-# CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-13"
+# CHECKPOINT_FILE_TO_LOAD = "neat-checkpoint-87"
 
 sys.setrecursionlimit(8000)
 
@@ -89,7 +89,10 @@ def run_maze(genomes, neat_config):
     maze_area = (
         (config.MAZE_ROWS - 2) * (config.MAZE_COLS - 2) * config.MAZE_SQUARE_SIZE
     )
-    max_distance = round(maze_area / 2.0 + 300 * math.sqrt(generation))
+    max_distance = round(
+        (2.5 * maze_area + 1500 * math.sqrt(generation))
+        / mouse.OPTIMISE_MOUSE_SPEED_MAX_INITIAL
+    )
     initial_direction_radians = random.uniform(-math.pi, math.pi)
 
     maze1 = maze.Maze(
@@ -151,13 +154,6 @@ def run_maze(genomes, neat_config):
             maze1.maze_big,
             maze_min_path_distance,
             maze_distance_score,
-            mouse.OPTIMISE_MOUSE_VISITED_PATH_RADIUS,
-            mouse.OPTIMISE_MOUSE_SPEED_MIN_INITIAL,
-            mouse.OPTIMISE_MOUSE_SPEED_MAX_INITIAL,
-            mouse.OPTIMISE_MOUSE_VISION_ANGLES_AND_WEIGHTS,
-            mouse.OPTIMISE_MOUSE_STEERING_MULTIPLIER,
-            mouse.OPTIMISE_MOUSE_VISITED_PATH_AVOIDANCE_FACTOR,
-            mouse.OPTIMISE_MOUSE_FRAMES_BETWEEN_BLURRING_VISITED,
             max_distance,
             initial_direction_radians,
         )
@@ -166,6 +162,7 @@ def run_maze(genomes, neat_config):
     # main loop
     while running:
         frame_number += 1
+        mouse_drawn = False
         stats_info_global["frame"] = frame_number
         if frame_number % config.FRAME_DISPLAY_RATE == 0:
             draw_frame = True
@@ -201,9 +198,9 @@ def run_maze(genomes, neat_config):
             mousei.get_maze_wall_distances()
             output = nets[index].activate(mousei.get_data())
 
-            steering_radians = output[0] * mouse.MOUSE_STEERING_RADIANS_DELTA_MAX
-            speed_delta = output[1] * 2.0
-            mousei.move(draw_frame, steering_radians, speed_delta)
+            steering_radians_scaled = output[0]
+            speed_delta_scaled = output[1]
+            mousei.move_scaled(draw_frame, steering_radians_scaled, speed_delta_scaled)
 
             # check if the status has changes
             if mousei.status is not mouse_status_previous:
@@ -228,16 +225,16 @@ def run_maze(genomes, neat_config):
             if mousei.status is mouse.MouseStatus.HUNTING:
                 mice_hunting += 1
 
-            """
-            if draw_frame:
-                mouse_drawer.draw_mouse(
-                    mousei.status,
-                    mousei.position_rounded,
-                    mousei.direction_radians,
-                    mousei.visited_alpha,
-                    mousei.whiskers,
-                )
-            """
+                # only draw 1 hunting mouse per frame
+                if draw_frame and not mouse_drawn:
+                    mouse_drawer.draw_mouse(
+                        mousei.status,
+                        mousei.position_rounded,
+                        mousei.direction_radians,
+                        mousei.visited_alpha,
+                        mousei.whiskers,
+                    )
+                    mouse_drawn = True
 
         stats_info_global["mice hunting"] = mice_hunting
 
@@ -246,9 +243,9 @@ def run_maze(genomes, neat_config):
             pygame.display.flip()
             screen.blit(background, (0, 0))
             screen.blit(maze_path_surface, (0, 0))
-            # screen.blit(mouse_drawer.visited_by_mouse_screen, (0, 0))
+            screen.blit(mouse_drawer.visited_by_mouse_screen, (0, 0))
             screen.blit(mouse_drawer.maze_wall_distances_screen, (0, 0))
-            # mouse_drawer.mouse_icon_group.draw(screen)
+            mouse_drawer.mouse_icon_group.draw(screen)
             screen.blit(stats_surface, (0, 0))
             pygame.display.update()
 
@@ -274,7 +271,7 @@ def run_neat(config):
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(generation_interval=1))
 
-    winner = p.run(run_maze, 1000)
+    winner = p.run(run_maze, 10000)
     with open("best.pickle", "wb") as f:
         pickle.dump(winner, f)
     print("done")

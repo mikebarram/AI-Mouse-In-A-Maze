@@ -9,10 +9,10 @@ import config
 
 # Mice can only look so far ahead. Needs to be larger than grid size for the maze
 MOUSE_VISION_DISTANCE = round(2.0 * config.MAZE_SQUARE_SIZE)
-MOUSE_ACCELERATION_MIN = -3  # change in speed in pixels per frame
-MOUSE_ACCELERATION_MAX = 2  # change in speed in pixels per frame
-MOUSE_STEERING_RADIANS_MAX = math.radians(45)
-MOUSE_STEERING_RADIANS_DELTA_MAX = math.radians(45)
+MOUSE_ACCELERATION_MIN = -3.0  # change in speed in pixels per frame
+MOUSE_ACCELERATION_MAX = 2.0  # change in speed in pixels per frame
+MOUSE_STEERING_RADIANS_MAX = math.radians(30)
+MOUSE_STEERING_RADIANS_DELTA_MAX = math.radians(15)
 MOUSE_TRAIL_CIRCLE_ALPHA = None
 MOUSE_MAX_SPIN_RADIANS = 4 * math.pi
 MOUSE_MAX_FRAMES_IN_SAME_CELL = 1.2 * config.MAZE_SQUARE_SIZE
@@ -20,8 +20,8 @@ MOUSE_MAX_FRAMES_IN_SAME_CELL = 1.2 * config.MAZE_SQUARE_SIZE
 # The following globals are to be set individually for each mouse
 # to try to optimise their values
 OPTIMISE_MOUSE_VISITED_PATH_RADIUS = 20
-OPTIMISE_MOUSE_SPEED_MIN_INITIAL = 2  # pixels per frame
-OPTIMISE_MOUSE_SPEED_MAX_INITIAL = 5  # pixels per frame
+OPTIMISE_MOUSE_SPEED_MIN_INITIAL = 2.0  # pixels per frame
+OPTIMISE_MOUSE_SPEED_MAX_INITIAL = 10.0  # pixels per frame
 OPTIMISE_MOUSE_WEIGHTS_15 = 1.0 / 5.0
 OPTIMISE_MOUSE_WEIGHTS_30 = 1.0 / 6.0
 OPTIMISE_MOUSE_WEIGHTS_45 = 1.0 / 6.0
@@ -70,13 +70,6 @@ class Mouse:
         maze_big,
         maze_min_path_distance,
         maze_distance_score,
-        visited_path_radius,
-        speed_min_initial,
-        speed_max_initial,
-        vision_angles_and_weights,
-        steering_multiplier,
-        visited_path_avoidance_factor,
-        frames_between_blurring_visited,
         max_distance,
         direction_radians,
     ):
@@ -86,42 +79,20 @@ class Mouse:
         )
         self.maze_min_path_distance = maze_min_path_distance
         self.maze_distance_score = maze_distance_score
-        self.visited_path_radius = visited_path_radius
-        self.speed_min_initial = speed_min_initial
-        self.speed_max_initial = speed_max_initial
-        self.vision_angles_and_weights = vision_angles_and_weights
-        self.steering_multiplier = steering_multiplier
-        self.visited_path_avoidance_factor = visited_path_avoidance_factor
-        self.frames_between_blurring_visited = frames_between_blurring_visited
         self.max_distance = max_distance
         self.direction_radians = direction_radians
 
-        """
-        *** fixed globals used in the Mouse class ***
-        config.MAZE_SQUARE_SIZE
-        MAZE_COLS
-        MAZE_ROWS
-        MOUSE_STEERING_RADIANS_DELTA_MAX
-        MOUSE_STEERING_RADIANS_MAX
-        MOUSE_VISION_DISTANCE
-        MOUSE_ACCELERATION_MIN
-        MOUSE_ACCELERATION_MAX
-
-        *** globals used in the Mouse class that will become variables, set for each instance by 'AI' ***
-        OPTIMISE_MOUSE_VISITED_PATH_RADIUS
-        OPTIMISE_MOUSE_SPEED_MIN_INITIAL
-        OPTIMISE_MOUSE_SPEED_MAX_INITIAL
-        OPTIMISE_MOUSE_WEIGHTS_15
-        OPTIMISE_MOUSE_WEIGHTS_30
-        OPTIMISE_MOUSE_WEIGHTS_45
-        OPTIMISE_MOUSE_WEIGHTS_60
-        OPTIMISE_MOUSE_WEIGHTS_90
-        OPTIMISE_MOUSE_VISION_ANGLES_AND_WEIGHTS
-        OPTIMISE_MOUSE_STEERING_MULTIPLIER
-        OPTIMISE_MOUSE_VISITED_PATH_AVOIDANCE_FACTOR
-        OPTIMISE_MOUSE_FRAMES_BETWEEN_BLURRING_VISITED
-
-        """
+        self.visited_path_radius = OPTIMISE_MOUSE_VISITED_PATH_RADIUS
+        self.speed_min_initial = OPTIMISE_MOUSE_SPEED_MIN_INITIAL
+        self.speed_max_initial = OPTIMISE_MOUSE_SPEED_MAX_INITIAL
+        self.vision_angles_and_weights = OPTIMISE_MOUSE_VISION_ANGLES_AND_WEIGHTS
+        self.steering_multiplier = OPTIMISE_MOUSE_STEERING_MULTIPLIER
+        self.visited_path_avoidance_factor = (
+            OPTIMISE_MOUSE_VISITED_PATH_AVOIDANCE_FACTOR
+        )
+        self.frames_between_blurring_visited = (
+            OPTIMISE_MOUSE_FRAMES_BETWEEN_BLURRING_VISITED
+        )
 
         # actual position is recorded as a tuple of floats
         # position is rounded just for display
@@ -136,14 +107,14 @@ class Mouse:
         # self.position_tiny_previous = None
         # self.position_tiny_frame_count = 0
         self.speed = config.MAZE_SQUARE_SIZE / 50  # pixels per frame
-        self.speed_min = speed_min_initial
-        self.speed_max = speed_max_initial
+        self.speed_min = self.speed_min_initial
+        self.speed_max = self.speed_max_initial
         self.status = MouseStatus.HUNTING
         # could try to set initial direction based on the shape of the
         # maze that's generated but this is fine
         self.steering_radians = 0
         self.position_previous_rounded = self.position_rounded
-        self.visited_alpha = np.zeros(window_size, dtype=np.int16)
+        self.visited_alpha = np.zeros(window_size, dtype=np.float32)
         self.maze_wall_distances = None
         self.whiskers = None
 
@@ -203,7 +174,7 @@ class Mouse:
         return array_alpha
 
     def get_data(self):
-        data = []
+        data = [self.speed]
         for angles in self.maze_wall_distances:
             for x in angles[1:4]:
                 data.append(x)
@@ -313,6 +284,21 @@ class Mouse:
                 speed_delta,
             ) = self.get_driving_changes_with_real_intelligence()
         return new_steering_radians, speed_delta
+
+    def move_scaled(self, draw_frame, new_steering_radians_scaled, speed_delta_scaled):
+        new_steering_radians = (
+            new_steering_radians_scaled * MOUSE_STEERING_RADIANS_DELTA_MAX
+        )
+        # MOUSE_ACCELERATION_MIN = -3  # change in speed in pixels per frame
+        # MOUSE_ACCELERATION_MAX = 2  # change in speed in pixels per frame
+        # -1 -> -3
+        # +1 -> 2
+        speed_delta = (
+            speed_delta_scaled * (MOUSE_ACCELERATION_MAX - MOUSE_ACCELERATION_MIN)
+            + MOUSE_ACCELERATION_MIN
+            + MOUSE_ACCELERATION_MAX
+        ) / 2.0
+        self.move(draw_frame, new_steering_radians, speed_delta)
 
     def move(self, draw_frame, new_steering_radians, speed_delta):
         if self.status is not MouseStatus.HUNTING:
@@ -534,7 +520,7 @@ class Mouse:
         """fades the mouses 2D array of records of where it has been - like
         a scent fading away"""
         # subtract from the alpha channel but stop it going below zero
-        visited_alpha[visited_alpha >= 1] -= 1
+        visited_alpha[visited_alpha >= 0] *= 0.99
         return
 
     @staticmethod
@@ -550,7 +536,7 @@ class Mouse:
     # @jit(nopython=True)
     def check_if_pottering(frames, cells_visited):
         """check if the mouse has moved too slowly"""
-        if len(cells_visited) < math.sqrt(frames / config.MAZE_SQUARE_SIZE):
+        if len(cells_visited) < 0.5 * math.sqrt(frames / config.MAZE_SQUARE_SIZE):
             return True
         else:
             return False
@@ -647,7 +633,7 @@ class Mouse:
 
         edge_distance = np.int64(0)
         visited_count = np.int64(0)
-        visited_alpha_total = np.int64(0)
+        visited_alpha_total = np.float32(0)
 
         for i in range(1, MOUSE_VISION_DISTANCE):
             edge_distance = i
