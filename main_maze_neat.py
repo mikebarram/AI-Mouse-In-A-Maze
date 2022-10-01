@@ -89,10 +89,11 @@ def run_maze(genomes, neat_config):
     maze_area = (
         (config.MAZE_ROWS - 2) * (config.MAZE_COLS - 2) * config.MAZE_SQUARE_SIZE
     )
-    max_distance = round(
-        (2.5 * maze_area + 1500 * math.sqrt(generation))
-        / mouse.OPTIMISE_MOUSE_SPEED_MAX_INITIAL
-    )
+    # max_distance = round(
+    #     (2.5 * maze_area + 1500 * math.sqrt(generation))
+    #     / mouse.OPTIMISE_MOUSE_SPEED_MAX_INITIAL
+    # )
+    max_distance = round(6.0 * maze_area / mouse.OPTIMISE_MOUSE_SPEED_MAX_INITIAL)
     initial_direction_radians = random.uniform(-math.pi, math.pi)
 
     maze1 = maze.Maze(

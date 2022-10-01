@@ -8,7 +8,7 @@ from numba import jit
 import config
 
 # Mice can only look so far ahead. Needs to be larger than grid size for the maze
-MOUSE_VISION_DISTANCE = round(2.0 * config.MAZE_SQUARE_SIZE)
+MOUSE_VISION_DISTANCE = round(1.2 * config.MAZE_SQUARE_SIZE)
 MOUSE_ACCELERATION_MIN = -3.0  # change in speed in pixels per frame
 MOUSE_ACCELERATION_MAX = 2.0  # change in speed in pixels per frame
 MOUSE_STEERING_RADIANS_MAX = math.radians(30)
@@ -20,25 +20,19 @@ MOUSE_MAX_FRAMES_IN_SAME_CELL = 1.2 * config.MAZE_SQUARE_SIZE
 # The following globals are to be set individually for each mouse
 # to try to optimise their values
 OPTIMISE_MOUSE_VISITED_PATH_RADIUS = 20
-OPTIMISE_MOUSE_SPEED_MIN_INITIAL = 2.0  # pixels per frame
+OPTIMISE_MOUSE_SPEED_MIN_INITIAL = 3.0  # pixels per frame
 OPTIMISE_MOUSE_SPEED_MAX_INITIAL = 10.0  # pixels per frame
-OPTIMISE_MOUSE_WEIGHTS_15 = 1.0 / 5.0
-OPTIMISE_MOUSE_WEIGHTS_30 = 1.0 / 6.0
+OPTIMISE_MOUSE_WEIGHTS_20 = 1.0 / 5.0
 OPTIMISE_MOUSE_WEIGHTS_45 = 1.0 / 6.0
-OPTIMISE_MOUSE_WEIGHTS_60 = 1.0 / 7.0
-OPTIMISE_MOUSE_WEIGHTS_90 = 1.0 / 7.0
+OPTIMISE_MOUSE_WEIGHTS_80 = 1.0 / 7.0
 OPTIMISE_MOUSE_VISION_ANGLES_AND_WEIGHTS = (
     (math.radians(0.0), 1.0 / 2.0),
-    (math.radians(-15.0), -OPTIMISE_MOUSE_WEIGHTS_15),
-    (math.radians(15.0), OPTIMISE_MOUSE_WEIGHTS_15),
-    (math.radians(-30.0), -OPTIMISE_MOUSE_WEIGHTS_30),
-    (math.radians(30.0), OPTIMISE_MOUSE_WEIGHTS_30),
+    (math.radians(-20.0), -OPTIMISE_MOUSE_WEIGHTS_20),
+    (math.radians(20.0), OPTIMISE_MOUSE_WEIGHTS_20),
     (math.radians(-45.0), -OPTIMISE_MOUSE_WEIGHTS_45),
     (math.radians(45.0), OPTIMISE_MOUSE_WEIGHTS_45),
-    (math.radians(-60.0), -OPTIMISE_MOUSE_WEIGHTS_60),
-    (math.radians(60.0), OPTIMISE_MOUSE_WEIGHTS_60),
-    (math.radians(-90.0), -OPTIMISE_MOUSE_WEIGHTS_90),
-    (math.radians(90.0), OPTIMISE_MOUSE_WEIGHTS_90),
+    (math.radians(-80.0), -OPTIMISE_MOUSE_WEIGHTS_80),
+    (math.radians(80.0), OPTIMISE_MOUSE_WEIGHTS_80),
 )  # 0 must be first, 90 degrees needed to get out of dead ends
 OPTIMISE_MOUSE_STEERING_MULTIPLIER = 2.5
 OPTIMISE_MOUSE_VISITED_PATH_AVOIDANCE_FACTOR = (

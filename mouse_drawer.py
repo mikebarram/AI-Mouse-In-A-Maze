@@ -66,7 +66,7 @@ class MouseDrawer:
         """draw lines from the mouse to the edge of the maze"""
         self.maze_wall_distances_screen.fill((0, 0, 0, 0))
         pygame.draw.lines(
-            self.maze_wall_distances_screen, config.WHITE, False, whiskers
+            self.maze_wall_distances_screen, config.BLACK, False, whiskers
         )
 
     def draw_mouse_finish_location(self, highlight_colour):
