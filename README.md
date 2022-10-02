@@ -27,6 +27,9 @@ After 1996 generations, it was more successful through following the right hand 
 ## Problems to solve
 - It's nothing like as good as non-AI version
 - It doesn't seem to learn how to get away from the start. Even after many generations, lots of mice crash into the walls at the start.
-- The algorithm only receives feedback at the end of each generation.
+- The algorithm only receives feedback at the end of each generation and so a mouse can make 2,000 moves (instructions from the algorithm) before anything is fed back to the algorithm to influence the next generation.
+- The NEAT algorithm has a lot of parameters and, while it's easy enough to understand what they mean, it's very hard to understand the impacts of changing them.
 
 Maybe a multi-stage algorithm would work better - for each step, first the mouse would decide what category of situation it is in, then it would use a NEAT algorithm for that category. Maybe it could recognise and categorise straights, corners, junctions and dead ends, perhaps with variations based on the scent trail...
+
+The maze generation algorithm used creates a simply connected maze (just one route from start to finish and no loops). This makes wall following the best strategy (I believe) in this situation and so getting a mouse to follow a wall isn't really any harder than getting a car to follow a track, as there are no route finding decisions to make. It also means that there is no need to make use of the "scent trail". It would be interesting to try this with a different maze algorithm, which creates loops, and then the route finding algorithm may need to make use of the scent trail.
