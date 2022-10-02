@@ -20,6 +20,10 @@ After 107 generations, it looks a lot better but is still not very successful, a
 
 ![ai_mice_gen107](https://user-images.githubusercontent.com/13784388/193431552-e688ddef-d903-42ad-88b9-844d9c4506c7.png)
 
+After 1996 generations, it was more successful through following the right hand wall but it was still rare to get a success rate above 50%:
+
+![ai_mice_gen1996](https://user-images.githubusercontent.com/13784388/193475783-53c303d9-fa1d-48cc-9765-ac4d2ff69000.png)
+
 ## Problems to solve
 - It's nothing like as good as non-AI version
 - It doesn't seem to learn how to get away from the start. Even after many generations, lots of mice crash into the walls at the start.
